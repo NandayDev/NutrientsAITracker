@@ -6,6 +6,7 @@ import dev.nanday.nutrients_ai_tracker.data.models.Food
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -13,8 +14,8 @@ interface FoodRepository {
     suspend fun insertFood(food: Food)
     suspend fun updateFood(food: Food)
     suspend fun deleteFood(food: Food)
-    fun getFoodById(id: Long): Flow<Food?>
-    fun getAllFoods(): Flow<List<DbFood>>
+    suspend fun getFoodById(id: Long): Food?
+    fun getAllFoods(): Flow<List<Food>>
 }
 
 class FoodRepositoryImpl @Inject constructor(
@@ -36,9 +37,13 @@ class FoodRepositoryImpl @Inject constructor(
         dao.deleteFood(dbFood)
     }
 
-    override fun getFoodById(id: Long): Flow<Food?> {
-        TODO("Not yet implemented")
+    override suspend fun getFoodById(id: Long): Food? = withContext(dispatcher) {
+        dao.getFoodById(id)?.toFood()
     }
 
-    override fun getAllFoods() = dao.getAllFoods()
+    override fun getAllFoods() = dao.getAllFoods().map { list ->
+        list.map { dbFood ->
+            dbFood.toFood()
+        }
+    }
 }

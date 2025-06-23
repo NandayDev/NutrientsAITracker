@@ -10,6 +10,4 @@ class FoodListViewModel @Inject constructor(
     private val foodRepository: FoodRepository
 ) : ViewModel() {
     val allFoods = foodRepository.getAllFoods()
-
-
 }

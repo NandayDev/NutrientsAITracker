@@ -78,6 +78,21 @@ data class DbFood(
         return result
     }
 
+    fun toFood() = Food(
+        id = id,
+        name = name,
+        photo = photo,
+        energyKj = energyKj,
+        energyKcal = energyKcal,
+        fat = fat,
+        saturatedFat = saturatedFat,
+        carbohydrates = carbohydrates,
+        sugars = sugars,
+        fiber = fiber,
+        protein = protein,
+        salt = salt
+    )
+
     companion object {
         fun fromFood(food: Food) = DbFood(
             id = food.id,

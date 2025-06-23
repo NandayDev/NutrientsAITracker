@@ -5,12 +5,10 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import dev.nanday.nutrients_ai_tracker.data.local.models.DbDailyIntake
 import dev.nanday.nutrients_ai_tracker.data.local.models.DbDailyIntakeWithFood
 import dev.nanday.nutrients_ai_tracker.data.local.models.DbFood
 import kotlinx.coroutines.flow.Flow
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Dao
 interface NutrientsDao {
@@ -37,13 +35,8 @@ interface NutrientsDao {
     )
     fun getDailyIntakesWithFoodForDateFlow(dateString: String): Flow<List<DbDailyIntakeWithFood>>
 
-    /**
-     * Convenience function to get daily intakes with food for the current day.
-     */
-    fun getTodaysDailyIntakesWithFoodFlow(): Flow<List<DbDailyIntakeWithFood>> {
-        val currentDateString = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        return getDailyIntakesWithFoodForDateFlow(currentDateString)
-    }
+    @Insert
+    suspend fun insertDailyIntake(dbDailyIntake: DbDailyIntake)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFood(food: DbFood)
