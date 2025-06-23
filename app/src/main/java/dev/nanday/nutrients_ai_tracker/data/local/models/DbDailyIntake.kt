@@ -19,7 +19,7 @@ import dev.nanday.nutrients_ai_tracker.data.local.AppDatabase
     ]
 )
 data class DbDailyIntake(
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = AppDatabase.Companion.DAILY_INTAKE_ID)
     val id: Long = 0L,
 

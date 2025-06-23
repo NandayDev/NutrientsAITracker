@@ -3,11 +3,13 @@ package dev.nanday.nutrients_ai_tracker.ui.add_food
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.util.Base64
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -20,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 import javax.inject.Inject
 
 interface IAddFoodViewModel {
@@ -197,7 +200,7 @@ class AddFoodViewModel @Inject constructor(
 
         viewModelScope.launch {
             val photoByteArray = selectedImageUri?.let { uri ->
-                compressImage(uri)
+                processAndCompressImage(uri)
             }
 
             // Validate and convert numeric inputs, handling potential nulls from toDouble()
@@ -227,45 +230,40 @@ class AddFoodViewModel @Inject constructor(
         }
     }
 
-    private suspend fun compressImage(imageUri: Uri): ByteArray? {
-        return withContext(Dispatchers.IO) { // Esegui la compressione in un thread IO
+    private suspend fun processAndCompressImage(imageUri: Uri): ByteArray? {
+        return withContext(Dispatchers.IO) {
             try {
-                val inputStream = context.contentResolver.openInputStream(imageUri)
-                inputStream?.use { stream ->
-                    val originalBitmap = BitmapFactory.decodeStream(stream)
+                context.contentResolver.openInputStream(imageUri)?.use { inputStream ->
+                    // 1. Decodifica il bitmap
+                    var originalBitmap = BitmapFactory.decodeStream(inputStream)
 
-                    // Se vuoi ridimensionare prima di comprimere (consigliato per immagini molto grandi)
-                    val scaledBitmap = scaleBitmap(originalBitmap, 800) // Ridimensiona a una larghezza massima di 800px
+                    // 2. Leggi l'orientamento EXIF e ruota il bitmap
+                    context.contentResolver.openInputStream(imageUri)?.use { exifInputStream ->
+                        originalBitmap = rotateImageIfRequired(originalBitmap, exifInputStream)
+                    }
 
-                    var quality = 90 // Inizia con una buona qualità
+                    // 3. Ridimensiona (opzionale ma consigliato)
+                    val scaledBitmap = scaleBitmap(originalBitmap, 800) // Esempio: larghezza max 800px
+
+                    // 4. Comprimi
                     val outputStream = ByteArrayOutputStream()
+                    var quality = 90
+                    val maxSizeInBytes = 1 * 1024 * 1024 // 1MB
 
-                    // Prova a comprimere con qualità decrescente finché la dimensione non è accettabile
-                    // (Opzionale, ma utile per garantire che non sia ancora troppo grande)
-                    // Ad esempio, potresti voler limitare la dimensione a 1MB (1024 * 1024 byte)
-                    val maxSizeInBytes = 1 * 1024 * 1024
                     do {
-                        outputStream.reset() // Pulisci lo stream per la prossima compressione
+                        outputStream.reset()
                         scaledBitmap.compress(Bitmap.CompressFormat.JPEG, quality, outputStream)
-                        if (outputStream.size() <= maxSizeInBytes || quality <= 10) { // Interrompi se la dimensione è OK o la qualità è troppo bassa
+                        if (outputStream.size() <= maxSizeInBytes || quality <= 10) {
                             break
                         }
-                        quality -= 10 // Riduci la qualità
+                        quality -= 10
                     } while (quality > 0)
-
-
-                    if (outputStream.size() > maxSizeInBytes && quality <= 10) {
-                        // Se anche con la qualità più bassa l'immagine è troppo grande,
-                        // potresti doverla ridimensionare ulteriormente o informare l'utente.
-                        // Per ora, restituiamo comunque l'immagine compressa con la qualità più bassa tentata.
-                        // Log.w("ImageCompression", "Image might still be too large after compression.")
-                    }
 
                     return@withContext outputStream.toByteArray()
                 }
-            } catch (e: IOException) {
+            } catch (e: Exception) {
                 e.printStackTrace()
-                // TODO: Gestisci l'eccezione di I/O (es. file non trovato, problemi di lettura)
+                // TODO: Gestisci l'eccezione
             }
             return@withContext null
         }
@@ -279,6 +277,43 @@ class AddFoodViewModel @Inject constructor(
         val aspectRatio = bitmap.width.toFloat() / bitmap.height.toFloat()
         val targetHeight = (maxWidth / aspectRatio).toInt()
         return Bitmap.createScaledBitmap(bitmap, maxWidth, targetHeight, true)
+    }
+
+    @Throws(IOException::class)
+    private fun rotateImageIfRequired(bitmap: Bitmap, inputStream: InputStream): Bitmap {
+        val exifInterface = ExifInterface(inputStream)
+        val orientation = exifInterface.getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_NORMAL
+        )
+
+        val matrix = Matrix()
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+            // Altri casi per flip orizzontale/verticale se necessario
+            // ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1.0f, 1.0f)
+            // ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1.0f, -1.0f)
+            else -> return bitmap // Nessuna rotazione necessaria
+        }
+
+        return try {
+            val rotatedBitmap = Bitmap.createBitmap(
+                bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+            )
+            // Libera la memoria del bitmap originale se non è più necessario e diverso dal ruotato
+            if (rotatedBitmap != bitmap) {
+                bitmap.recycle()
+            }
+            rotatedBitmap
+        } catch (e: OutOfMemoryError) {
+            e.printStackTrace()
+            // Se c'è un OutOfMemoryError durante la creazione del bitmap ruotato,
+            // restituisci il bitmap originale per evitare crash.
+            // Potresti voler loggare questo errore.
+            bitmap
+        }
     }
 }
 

@@ -1,6 +1,8 @@
 package dev.nanday.nutrients_ai_tracker.ui.add_food
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
 import android.net.Uri
@@ -39,6 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +57,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import java.io.File
@@ -71,6 +75,11 @@ fun AddFoodScreen(
 
     var productPhotoUri by remember { mutableStateOf<Uri?>(null) }
     var nutritionTablePhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var photoPermissionGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     // --- Image Picker ---
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -97,6 +106,12 @@ fun AddFoodScreen(
             }
         }
     )
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        photoPermissionGranted = isGranted
+    }
 
     Scaffold(
         topBar = {
@@ -161,6 +176,10 @@ fun AddFoodScreen(
                     )
                     .clip(MaterialTheme.shapes.medium)
                     .clickable {
+                        if (!photoPermissionGranted) {
+                            permissionLauncher.launch(Manifest.permission.CAMERA)
+                            return@clickable
+                        }
                         val uri = createImageFileUri(context)
                         productPhotoUri = uri
                         photoPickerLauncher.launch(uri)
@@ -191,6 +210,10 @@ fun AddFoodScreen(
             IconButton(
                 modifier = Modifier.width(150.dp),
                 onClick = {
+                    if (!photoPermissionGranted) {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                        return@IconButton
+                    }
                     val uri = createImageFileUri(context)
                     nutritionTablePhotoUri = uri
                     nutritionTablePickerLauncher.launch(uri)
@@ -346,3 +369,28 @@ private fun Preview() = AddFoodScreen(
     },
     onFoodAdded = {}
 ) { }
+
+@Composable
+fun RequestCameraPermission(
+    onPermissionGranted: () -> Unit,
+    onPermissionDenied: () -> Unit
+) {
+    val context = LocalContext.current
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) onPermissionGranted() else onPermissionDenied()
+    }
+
+    LaunchedEffect(Unit) {
+        when (PackageManager.PERMISSION_GRANTED) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) -> {
+                onPermissionGranted()
+            }
+
+            else -> {
+                permissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
+}
