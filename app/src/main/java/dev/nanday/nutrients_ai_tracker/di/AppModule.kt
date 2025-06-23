@@ -6,10 +6,20 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.nanday.nutrients_ai_tracker.BuildConfig
 import dev.nanday.nutrients_ai_tracker.data.DailyIntakeRepository
 import dev.nanday.nutrients_ai_tracker.data.DailyIntakeRepositoryImpl
+import dev.nanday.nutrients_ai_tracker.data.FoodRepository
+import dev.nanday.nutrients_ai_tracker.data.FoodRepositoryImpl
+import dev.nanday.nutrients_ai_tracker.data.OpenAiRepository
+import dev.nanday.nutrients_ai_tracker.data.OpenAiRepositoryImpl
 import dev.nanday.nutrients_ai_tracker.data.local.AppDatabase
 import dev.nanday.nutrients_ai_tracker.data.local.NutrientsDao
+import dev.nanday.nutrients_ai_tracker.data.remote.OpenAiClient
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
 
 @Module
@@ -29,7 +39,45 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideFoodRepository(dao: NutrientsDao): DailyIntakeRepository {
+    fun provideFoodRepository(dao: NutrientsDao): FoodRepository {
+        return FoodRepositoryImpl(dao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDailyIntakeRepository(dao: NutrientsDao): DailyIntakeRepository {
         return DailyIntakeRepositoryImpl(dao)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOpenAiClient(retrofit: Retrofit): OpenAiClient {
+        return retrofit.create(OpenAiClient::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOpenAiRepository(client: OpenAiClient): OpenAiRepository = OpenAiRepositoryImpl(client)
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE // Logga tutto: URL, headers, body
+        }
+
+        return OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.openai.com/") // o qualsiasi base URL
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttpClient)
+            .build()
     }
 }

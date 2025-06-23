@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
+
+hilt {
+    enableAggregatingTask = false
+}
+
+val openAiKey: String? = project.rootProject
+    .file("local.properties")
+    .inputStream()
+    .use { Properties().apply { load(it) } }
+    .getProperty("OPENAI_API_KEY")
 
 android {
     namespace = "dev.nanday.nutrients_ai_tracker"
@@ -17,6 +30,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "OPENAI_API_KEY", "\"$openAiKey\"")
     }
 
     buildTypes {
@@ -34,6 +49,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -51,15 +67,21 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
 
+    implementation(libs.androidx.material.icons.extended.android)
+
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
-    ksp(libs.hilt.android)
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
+    ksp(libs.hilt.compiler)
 
     implementation(libs.gson)
+
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.gson)
+    implementation(libs.logging.interceptor)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

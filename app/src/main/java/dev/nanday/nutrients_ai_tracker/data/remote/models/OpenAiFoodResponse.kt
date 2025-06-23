@@ -1,9 +1,6 @@
-package dev.nanday.nutrients_ai_tracker.data
+package dev.nanday.nutrients_ai_tracker.data.remote.models
 
-data class Food(
-    val id: Long = 0L,
-    val name: String,
-
+data class OpenAiFoodResponse(
     val energyKj: Double,        // energia in kJ per 100g
     val energyKcal: Double,      // energia in kcal per 100g
 
@@ -16,5 +13,5 @@ data class Food(
     val fiber: Double,           // fibre in grammi per 100g
     val protein: Double,         // proteine in grammi per 100g
 
-    val salt: Double             // sale in grammi per 100g
+    val salt: Double
 )

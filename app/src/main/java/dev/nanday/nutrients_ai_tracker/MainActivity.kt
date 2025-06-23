@@ -11,6 +11,7 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import dev.nanday.nutrients_ai_tracker.ui.HomeScreen
 import dev.nanday.nutrients_ai_tracker.ui.HomeViewModel
+import dev.nanday.nutrients_ai_tracker.ui.add_food.AddFoodScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListViewModel
 
@@ -50,11 +51,15 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
             )
         }
         composable(Screen.AddFood.route) {
-            // You'll create this Composable if you have a dedicated screen for adding food
-            // AddFoodScreen(
-            //    viewModel = addFoodViewModel,
-            //    onFoodAdded = { navController.popBackStack() } // Go back after adding
-            // )
+            AddFoodScreen(
+                // addFoodViewModel = hiltViewModel(), // If using Hilt
+                onFoodAdded = {
+                    navController.popBackStack(Screen.FoodList.route, inclusive = false) // Or navigate to FoodList
+                    // Optionally, you could navigate all the way back to Home:
+                    // navController.popBackStack(Screen.Home.route, inclusive = false)
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

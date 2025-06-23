@@ -11,7 +11,7 @@ abstract class AppDatabase : RoomDatabase() {
 
     companion object {
         const val FOOD_TABLE_NAME = "foods"
-        const val FOOD_ID = "id"
+        const val FOOD_ID = "fd_id"
         const val FOOD_NAME = "name"
         const val FOOD_ENERGY_KJ = "energy_kj"
         const val FOOD_ENERGY_KCAL = "energy_kcal"
@@ -24,7 +24,7 @@ abstract class AppDatabase : RoomDatabase() {
         const val FOOD_SALT = "salt"
 
         const val DAILY_INTAKE_TABLE_NAME = "daily_intakes"
-        const val DAILY_INTAKE_ID = "id"
+        const val DAILY_INTAKE_ID = "di_id"
         const val DAILY_INTAKE_FOOD_ID = "food_id"
         const val DAILY_INTAKE_DATE = "date"
         const val DAILY_INTAKE_QUANTITY = "quantity"

@@ -36,7 +36,7 @@ fun FoodListScreen(
     onNavigateToAddFood: () -> Unit,
     onFoodSelected: (Long) -> Unit // Callback with the ID of the selected food
 ) {
-    val foods by viewModel.allFoods.collectAsState()
+    val foods by viewModel.allFoods.collectAsState(initial = listOf())
 
     Scaffold(
         topBar = {

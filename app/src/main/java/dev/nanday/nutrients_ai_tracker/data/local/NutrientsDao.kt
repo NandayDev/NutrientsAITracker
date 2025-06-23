@@ -1,6 +1,7 @@
 package dev.nanday.nutrients_ai_tracker.data.local
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -46,6 +47,9 @@ interface NutrientsDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFood(food: DbFood)
+
+    @Delete
+    suspend fun deleteFood(food: DbFood)
 
     @Query("SELECT * FROM ${AppDatabase.FOOD_TABLE_NAME} WHERE ${AppDatabase.FOOD_ID} = :foodId")
     suspend fun getFoodById(foodId: Long): DbFood?

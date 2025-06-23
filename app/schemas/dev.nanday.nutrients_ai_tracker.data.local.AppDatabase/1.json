@@ -1,0 +1,145 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "de854b526040201c0d87dbcb07ec1af7",
+    "entities": [
+      {
+        "tableName": "foods",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`fd_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `photo` BLOB, `energy_kj` REAL NOT NULL, `energy_kcal` REAL NOT NULL, `fat` REAL NOT NULL, `saturated_fat` REAL NOT NULL, `carbohydrates` REAL NOT NULL, `sugar` REAL NOT NULL, `fibers` REAL NOT NULL, `proteins` REAL NOT NULL, `salt` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "fd_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "photo",
+            "columnName": "photo",
+            "affinity": "BLOB"
+          },
+          {
+            "fieldPath": "energyKj",
+            "columnName": "energy_kj",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "energyKcal",
+            "columnName": "energy_kcal",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fat",
+            "columnName": "fat",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "saturatedFat",
+            "columnName": "saturated_fat",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "carbohydrates",
+            "columnName": "carbohydrates",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sugars",
+            "columnName": "sugar",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fiber",
+            "columnName": "fibers",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "protein",
+            "columnName": "proteins",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "salt",
+            "columnName": "salt",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "fd_id"
+          ]
+        }
+      },
+      {
+        "tableName": "daily_intakes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`di_id` INTEGER NOT NULL, `date` TEXT NOT NULL, `food_id` INTEGER NOT NULL, `quantity` REAL NOT NULL, PRIMARY KEY(`di_id`), FOREIGN KEY(`food_id`) REFERENCES `foods`(`fd_id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "di_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "foodId",
+            "columnName": "food_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantity",
+            "columnName": "quantity",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "di_id"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "foods",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "food_id"
+            ],
+            "referencedColumns": [
+              "fd_id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'de854b526040201c0d87dbcb07ec1af7')"
+    ]
+  }
+}
