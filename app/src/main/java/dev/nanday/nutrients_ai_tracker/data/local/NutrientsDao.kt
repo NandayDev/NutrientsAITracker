@@ -35,8 +35,31 @@ interface NutrientsDao {
     )
     fun getDailyIntakesWithFoodForDateFlow(dateString: String): Flow<List<DbDailyIntakeWithFood>>
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDailyIntake(dbDailyIntake: DbDailyIntake)
+
+    /**
+     * Retrieves a specific DbDailyIntake by its ID.
+     */
+    @Query(
+        """
+        SELECT
+            di.${AppDatabase.DAILY_INTAKE_ID},
+            di.${AppDatabase.DAILY_INTAKE_DATE},
+            di.${AppDatabase.DAILY_INTAKE_QUANTITY},
+            f.*
+        FROM ${AppDatabase.DAILY_INTAKE_TABLE_NAME} AS di
+        LEFT JOIN ${AppDatabase.FOOD_TABLE_NAME} AS f ON di.food_id = f.${AppDatabase.FOOD_ID}
+        WHERE di.${AppDatabase.DAILY_INTAKE_ID} = :id
+    """
+    )
+    suspend fun getDailyIntakeWithFoodById(id: Long): DbDailyIntakeWithFood?
+
+    /**
+     * Deletes a specific DbDailyIntake from the database.
+     */
+    @Delete
+    suspend fun deleteDailyIntake(dbDailyIntake: DbDailyIntake)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFood(food: DbFood)

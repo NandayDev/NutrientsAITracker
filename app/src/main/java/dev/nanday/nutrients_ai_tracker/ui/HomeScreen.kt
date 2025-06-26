@@ -1,6 +1,8 @@
 package dev.nanday.nutrients_ai_tracker.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -44,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.nanday.nutrients_ai_tracker.data.models.Nutrient
 import dev.nanday.nutrients_ai_tracker.ui.date_picker.DateChoiceDialog
 import java.util.Locale
 
@@ -51,9 +55,11 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
-    onAddFood: () -> Unit // Navigazione per aggiungere cibo
+    onAddFood: () -> Unit,
+    onUpdateDailyIntake: (Long) -> Unit,
+    onNutrientClick: (Nutrient) -> Unit
 ) {
-    val consumedFoods by viewModel.consumedFoodsUi.collectAsState()
+    val uiModels by viewModel.uiModels.collectAsState()
     val nutrientTotals by viewModel.nutrientTotalsUi.collectAsState()
     var showDatePickerDialog by remember { mutableStateOf(false) }
 
@@ -90,7 +96,7 @@ fun HomeScreen(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            if (consumedFoods.isEmpty()) {
+            if (uiModels.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -106,10 +112,12 @@ fun HomeScreen(
                         .weight(1f)
                 ) {
                     items(
-                        items = consumedFoods,
+                        items = uiModels,
                         key = { it.id } // Assicurati che DailyIntakeUiModel abbia un ID univoco
-                    ) { foodItem ->
-                        ConsumedFoodItem(foodItem = foodItem)
+                    ) { uiModel ->
+                        ConsumedFoodItem(foodItem = uiModel) {
+                            onUpdateDailyIntake(uiModel.id)
+                        }
                     }
                 }
             }
@@ -124,7 +132,10 @@ fun HomeScreen(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
-            NutrientTotalsTable(totals = nutrientTotals)
+            NutrientTotalsTable(
+                totals = nutrientTotals,
+                onNutrientClick = onNutrientClick
+            )
 
             Spacer(modifier = Modifier.weight(0.3f)) // Un po' di spazio in fondo, se necessario
         }
@@ -140,9 +151,14 @@ fun HomeScreen(
 }
 
 @Composable
-fun ConsumedFoodItem(foodItem: DailyIntakeUiModel) {
+fun ConsumedFoodItem(foodItem: DailyIntakeUiModel, onClick: () -> Unit) {
     Row(
         modifier = Modifier
+            .clickable(
+                onClick = onClick,
+                indication = ripple(),
+                interactionSource = remember { MutableInteractionSource() }
+            )
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -162,7 +178,10 @@ fun ConsumedFoodItem(foodItem: DailyIntakeUiModel) {
 }
 
 @Composable
-fun NutrientTotalsTable(totals: NutrientTotalsUiModel?) {
+fun NutrientTotalsTable(
+    totals: NutrientTotalsUiModel?,
+    onNutrientClick: (Nutrient) -> Unit
+) {
     if (totals == null) {
         CircularProgressIndicator()
         return
@@ -175,42 +194,50 @@ fun NutrientTotalsTable(totals: NutrientTotalsUiModel?) {
             NutrientProgressRow(
                 label = "Calorie",
                 uiModel = totals.totalEnergyKcal,
-                barColor = MaterialTheme.colorScheme.tertiary // Colore per le calorie
+                barColor = MaterialTheme.colorScheme.tertiary, // Colore per le calorie
+                onClick = onNutrientClick
             )
             NutrientProgressRow(
                 label = "Proteine",
                 uiModel = totals.totalProteinGrams,
-                barColor = Color(0xFF4CAF50) // Verde per le proteine
+                barColor = Color(0xFF4CAF50), // Verde per le proteine
+                onClick = onNutrientClick
             )
             NutrientProgressRow(
                 label = "Grassi",
                 uiModel = totals.totalFatGrams,
-                barColor = Color(0xFFFFC107) // Giallo/Arancio per i grassi
+                barColor = Color(0xFFFFC107), // Giallo/Arancio per i grassi
+                onClick = onNutrientClick
             )
             NutrientProgressRow(
                 label = "Grassi saturi",
                 uiModel = totals.totalSaturatedFatGrams,
-                barColor = Color(0xFFBB9900) // Giallo/Arancio per i grassi
+                barColor = Color(0xFFBB9900), // Giallo/Arancio per i grassi
+                onClick = onNutrientClick
             )
             NutrientProgressRow(
                 label = "Carboidrati",
                 uiModel = totals.totalCarbsGrams,
-                barColor = Color(0xFF2196F3) // Blu per i carboidrati
+                barColor = Color(0xFF2196F3), // Blu per i carboidrati
+                onClick = onNutrientClick
             )
             NutrientProgressRow(
                 label = "Zuccheri", // Ricorda che questo è un limite massimo
                 uiModel = totals.totalSugarGrams,
-                barColor = if (totals.totalSugarGrams.percentageOfTarget > 1f) MaterialTheme.colorScheme.error else Color(0xFFE91E63) // Rosa/Rosso
+                barColor = if (totals.totalSugarGrams.percentageOfTarget > 1f) MaterialTheme.colorScheme.error else Color(0xFFE91E63), // Rosa/Rosso
+                onClick = onNutrientClick
             )
             NutrientProgressRow(
                 label = "Fibre",
                 uiModel = totals.totalFiberGrams,
-                barColor = Color(0xFF795548) // Marrone per le fibre
+                barColor = Color(0xFF795548), // Marrone per le fibre
+                onClick = onNutrientClick
             )
             NutrientProgressRow(
                 label = "Sale", // Ricorda che questo è un limite massimo
                 uiModel = totals.totalSaltGrams,
-                barColor = if (totals.totalSaltGrams.percentageOfTarget > 1f) MaterialTheme.colorScheme.error else Color(0xFF553344) // Nero
+                barColor = if (totals.totalSaltGrams.percentageOfTarget > 1f) MaterialTheme.colorScheme.error else Color(0xFF553344), // Nero
+                onClick = onNutrientClick
             )
         }
     }
@@ -223,8 +250,9 @@ fun NutrientProgressRow(
     uiModel: NutrientUiModel,
     barColor: Color,
     barBackgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    textColorOnBar: Color = Color.White, // Colore per il testo quando è SOPRA la parte colorata della barra
-    textColorOffBar: Color = MaterialTheme.colorScheme.onSurface // Colore per il testo quando è SOPRA lo sfondo
+    textColorOnBar: Color = Color.White,
+    textColorOffBar: Color = MaterialTheme.colorScheme.onSurface,
+    onClick: (Nutrient) -> Unit
 ) {
     val percentageString = String.format(Locale.getDefault(), "%.0f", uiModel.percentageOfTarget * 100)
     val progressFraction = kotlin.math.min(uiModel.percentageOfTarget, 1f)
@@ -234,6 +262,11 @@ fun NutrientProgressRow(
             .fillMaxWidth()
             .height(IntrinsicSize.Min) // Fa sì che il Box si adatti all'altezza del contenuto (Row)
             .clip(RoundedCornerShape(8.dp)) // Arrotonda gli angoli dell'intera riga/barra
+            .clickable(
+                onClick = { onClick(uiModel.nutrient) },
+                indication = ripple(),
+                interactionSource = remember { MutableInteractionSource() }
+            )
     ) {
         // 1. Sfondo completo (barBackgroundColor)
         Box(

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.nanday.nutrients_ai_tracker.data.DailyIntakeRepository
+import dev.nanday.nutrients_ai_tracker.data.models.Nutrient
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -37,11 +38,11 @@ class HomeViewModel @Inject constructor(
         )
 
     // Modelli UI per la lista degli alimenti consumati
-    val consumedFoodsUi: StateFlow<List<DailyIntakeUiModel>> = todayIntakeFlow
+    val uiModels: StateFlow<List<DailyIntakeUiModel>> = todayIntakeFlow
         .map { list ->
             list.map { dailyIntakeWithFood ->
                 DailyIntakeUiModel(
-                    id = dailyIntakeWithFood.dailyIntakeId,
+                    id = dailyIntakeWithFood.id,
                     name = dailyIntakeWithFood.food.name,
                     quantity = "${dailyIntakeWithFood.quantity} g"
                 )
@@ -83,14 +84,14 @@ class HomeViewModel @Inject constructor(
             }
 
             NutrientTotalsUiModel(
-                totalEnergyKcal = NutrientUiModel(totalEnergy, RecommendedQuantities.ENERGY_KCAL, "kcal"),
-                totalProteinGrams = NutrientUiModel(totalProtein, RecommendedQuantities.PROTEINS, "g"),
-                totalFatGrams = NutrientUiModel(totalFat, RecommendedQuantities.FAT, "g"),
-                totalSaturatedFatGrams = NutrientUiModel(totalSaturatedFat, RecommendedQuantities.SATURATED_FAT, "g"),
-                totalCarbsGrams = NutrientUiModel(totalCarbs, RecommendedQuantities.CARBOHYDRATES, "g"),
-                totalFiberGrams = NutrientUiModel(totalFiber, RecommendedQuantities.FIBERS, "g"),
-                totalSugarGrams = NutrientUiModel(totalSugar, RecommendedQuantities.SUGAR, "g"),
-                totalSaltGrams = NutrientUiModel(totalSalt, RecommendedQuantities.SALT, "g")
+                totalEnergyKcal = NutrientUiModel(Nutrient.CALORIES, totalEnergy, RecommendedQuantities.ENERGY_KCAL, "kcal"),
+                totalProteinGrams = NutrientUiModel(Nutrient.PROTEINS, totalProtein, RecommendedQuantities.PROTEINS, "g"),
+                totalFatGrams = NutrientUiModel(Nutrient.FAT, totalFat, RecommendedQuantities.FAT, "g"),
+                totalSaturatedFatGrams = NutrientUiModel(Nutrient.SATURATED_FAT, totalSaturatedFat, RecommendedQuantities.SATURATED_FAT, "g"),
+                totalCarbsGrams = NutrientUiModel(Nutrient.CARBOHYDRATES, totalCarbs, RecommendedQuantities.CARBOHYDRATES, "g"),
+                totalFiberGrams = NutrientUiModel(Nutrient.FIBERS, totalFiber, RecommendedQuantities.FIBERS, "g"),
+                totalSugarGrams = NutrientUiModel(Nutrient.SUGAR, totalSugar, RecommendedQuantities.SUGAR, "g"),
+                totalSaltGrams = NutrientUiModel(Nutrient.SALT, totalSalt, RecommendedQuantities.SALT, "g")
             )
         }
         .stateIn(
@@ -111,6 +112,6 @@ class HomeViewModel @Inject constructor(
     }
 }
 
-data class NutrientUiModel(val currentValue: Double, val targetValue: Double, val unit: String) {
+data class NutrientUiModel(val nutrient: Nutrient, val currentValue: Double, val targetValue: Double, val unit: String) {
     val percentageOfTarget by lazy { (currentValue / targetValue).toFloat() }
 }

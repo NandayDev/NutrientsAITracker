@@ -1,4 +1,4 @@
-package dev.nanday.nutrients_ai_tracker.ui.add_daily_intake // Crea questo package
+package dev.nanday.nutrients_ai_tracker.ui.daily_intake // Crea questo package
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 data class NutrientInfo(
     val energyKcal: Double,
@@ -37,31 +38,40 @@ class AddDailyIntakeViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val foodId: Long = savedStateHandle.get<Long>("foodId")!!
+    private val foodId = savedStateHandle.get<Long>("foodId")
+    private val dailyIntakeId = savedStateHandle.get<Long>("dailyIntakeId")
 
     private val _food = MutableStateFlow<Food?>(null)
     val food: StateFlow<Food?> = _food.asStateFlow()
 
-    // Stato per la quantità in grammi inserita dall'utente
-    private val _grams = mutableStateOf("") // Stringa per gestire l'input del TextField
+    private val _grams = mutableStateOf("")
     val grams: State<String> = _grams
 
-    // Stato per le informazioni nutrizionali calcolate (per 100g e per la quantità inserita)
-    // Dati fittizi per ora per 100g
     private val _baseNutrientsPer100g = MutableStateFlow<NutrientInfo?>(null)
-    // val baseNutrientsPer100g: StateFlow<NutrientInfo?> = _baseNutrientsPer100g.asStateFlow() // Non esposta direttamente
 
     private val _calculatedNutrients = MutableStateFlow<NutrientInfo?>(null)
     val calculatedNutrients: StateFlow<NutrientInfo?> = _calculatedNutrients.asStateFlow()
 
+    val _shouldShowDeleteButton = MutableStateFlow(false)
+    val shouldShowDeleteButton = _shouldShowDeleteButton.asStateFlow()
+
     init {
-        if (foodId != -1L) {
-            viewModelScope.launch {
-                _food.value = foodRepository.getFoodById(foodId) // Assicurati che il repository abbia questo metodo
-                _food.value?.let {
-                    _baseNutrientsPer100g.value = fetchBaseNutrientsForFood(it) // Funzione fittizia
-                    updateCalculatedNutrients() // Calcola inizialmente per 0 grammi o per i grammi salvati se ci sono
-                }
+        viewModelScope.launch {
+            _food.value = if (foodId != null) {
+                _shouldShowDeleteButton.value = false
+                foodRepository.getFoodById(foodId) // Assicurati che il repository abbia questo metodo
+            } else if (dailyIntakeId != null) {
+                val dailyIntake = dailyIntakeRepository.getDailyIntakeWithFoodById(dailyIntakeId)
+                _grams.value = dailyIntake?.quantity?.roundToInt().toString()
+                _shouldShowDeleteButton.value = true
+                dailyIntake?.food
+            } else {
+                return@launch
+            }
+
+            _food.value?.let {
+                _baseNutrientsPer100g.value = fetchBaseNutrientsForFood(it) // Funzione fittizia
+                updateCalculatedNutrients() // Calcola inizialmente per 0 grammi o per i grammi salvati se ci sono
             }
         }
     }
@@ -117,9 +127,19 @@ class AddDailyIntakeViewModel @Inject constructor(
         val nutrients = _calculatedNutrients.value
 
         if (currentFood != null && currentGrams != null && currentGrams > 0 && nutrients != null) {
-            dailyIntakeRepository.saveTodayFoodIntake(currentFood, currentGrams)
-        } else {
-            println("Errore: Dati non validi per il salvataggio.")
+            if (dailyIntakeId == null) {
+                dailyIntakeRepository.createDailyIntake(currentFood, currentGrams)
+            } else {
+                dailyIntakeRepository.updateDailyIntake(
+                    dailyIntakeId = dailyIntakeId,
+                    food = currentFood,
+                    quantityGrams = currentGrams
+                )
+            }
         }
+    }
+
+    suspend fun delete() {
+        dailyIntakeRepository.deleteDailyIntake(dailyIntakeId!!)
     }
 }

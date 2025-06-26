@@ -13,10 +13,11 @@ import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import dev.nanday.nutrients_ai_tracker.ui.HomeScreen
 import dev.nanday.nutrients_ai_tracker.ui.HomeViewModel
-import dev.nanday.nutrients_ai_tracker.ui.add_daily_intake.AddDailyIntakeScreen
 import dev.nanday.nutrients_ai_tracker.ui.add_food.AddFoodScreen
+import dev.nanday.nutrients_ai_tracker.ui.daily_intake.DailyIntakeScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListViewModel
+import dev.nanday.nutrients_ai_tracker.ui.nutrient_detail.NutrientDetailScreen
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -38,7 +39,17 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
         composable(Screen.Home.route) {
             HomeScreen(
                 viewModel = homeViewModel,
-                onAddFood = { navController.navigate(Screen.FoodList.route) } // Navigate to FoodList
+                onAddFood = { navController.navigate(Screen.FoodList.route) },
+                onUpdateDailyIntake = { dailyIntakeId ->
+                    navController.navigate(
+                        Screen.UpdateDailyIntake.createRoute(dailyIntakeId)
+                    )
+                },
+                onNutrientClick = { nutrient ->
+                    navController.navigate(
+                        Screen.NutrientDetail.createRoute(nutrient.number)
+                    )
+                }
             )
         }
         composable(Screen.FoodList.route) {
@@ -63,9 +74,26 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
             )
         }
         composable(Screen.AddDailyIntake.route, arguments = listOf(navArgument("foodId") { type = NavType.LongType })) {
-            AddDailyIntakeScreen(
+            DailyIntakeScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+        composable(Screen.UpdateDailyIntake.route, arguments = listOf(navArgument("dailyIntakeId") { type = NavType.LongType })) {
+            DailyIntakeScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.NutrientDetail.route,
+            arguments = listOf(navArgument("nutrientNumber") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val nutrientNumber = backStackEntry.arguments?.getInt("nutrientNumber")
+            if (nutrientNumber != null) {
+                NutrientDetailScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
         }
     }
 }
@@ -76,5 +104,13 @@ sealed class Screen(val route: String) {
     object AddFood : Screen("add_food")
     object AddDailyIntake : Screen("add_daily_intake/{foodId}") {
         fun createRoute(foodId: Long): String = "add_daily_intake/$foodId"
+    }
+
+    object UpdateDailyIntake : Screen("update_daily_intake/{dailyIntakeId}") {
+        fun createRoute(dailyIntakeId: Long): String = "update_daily_intake/$dailyIntakeId"
+    }
+
+    object NutrientDetail : Screen("nutrient_detail/{nutrientNumber}") {
+        fun createRoute(nutrientNumber: Int): String = "nutrient_detail/$nutrientNumber"
     }
 }

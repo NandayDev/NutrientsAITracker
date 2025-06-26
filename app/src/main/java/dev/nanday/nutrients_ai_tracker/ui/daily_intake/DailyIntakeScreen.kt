@@ -1,4 +1,4 @@
-package dev.nanday.nutrients_ai_tracker.ui.add_daily_intake
+package dev.nanday.nutrients_ai_tracker.ui.daily_intake
 
 import android.graphics.BitmapFactory
 import android.widget.Toast
@@ -17,7 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,6 +32,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -43,20 +47,24 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import dev.nanday.nutrients_ai_tracker.ui.shared.SimpleYesCancelDialog
 import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddDailyIntakeScreen(
+fun DailyIntakeScreen(
     viewModel: AddDailyIntakeViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
     val food by viewModel.food.collectAsState()
+    val shouldShowDeleteButton by viewModel.shouldShowDeleteButton.collectAsState()
     val grams by viewModel.grams
     val calculatedNutrients by viewModel.calculatedNutrients.collectAsState()
     val lifecycleScope = LocalLifecycleOwner.current.lifecycleScope
     val context = LocalContext.current
+
+    var showDeleteAlertDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -64,7 +72,19 @@ fun AddDailyIntakeScreen(
                 title = { Text(food?.name ?: "Dettaglio Alimento") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    if (shouldShowDeleteButton) {
+                        IconButton(onClick = {
+                            showDeleteAlertDialog = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Seleziona Data"
+                            )
+                        }
                     }
                 }
             )
@@ -175,6 +195,23 @@ fun AddDailyIntakeScreen(
                 CircularProgressIndicator()
             }
         }
+    }
+
+    if (showDeleteAlertDialog) {
+        SimpleYesCancelDialog(
+            text = "Vuoi davvero eliminare questa entry?",
+            onConfirm = {
+                showDeleteAlertDialog = false
+                lifecycleScope.launch {
+                    viewModel.delete()
+                    Toast.makeText(context, "Eliminato!", Toast.LENGTH_SHORT).show()
+                    onNavigateBack()
+                }
+            },
+            onDismiss = {
+                showDeleteAlertDialog = false
+            }
+        )
     }
 }
 

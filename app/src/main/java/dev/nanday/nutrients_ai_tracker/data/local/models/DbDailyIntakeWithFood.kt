@@ -3,6 +3,7 @@ package dev.nanday.nutrients_ai_tracker.data.local.models
 import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import dev.nanday.nutrients_ai_tracker.data.local.AppDatabase
+import dev.nanday.nutrients_ai_tracker.data.models.DailyIntakeWithFood
 
 
 data class DbDailyIntakeWithFood(
@@ -18,4 +19,11 @@ data class DbDailyIntakeWithFood(
 
     @Embedded
     val food: DbFood
-)
+) {
+    fun toDailyIntakeWithFood() = DailyIntakeWithFood(
+        id = dailyIntakeId,
+        date = dateString,
+        food = food.toFood(),
+        quantity = quantity
+    )
+}
