@@ -17,13 +17,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,6 +33,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.nanday.nutrients_ai_tracker.ui.date_picker.DateChoiceDialog
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,11 +55,20 @@ fun HomeScreen(
 ) {
     val consumedFoods by viewModel.consumedFoodsUi.collectAsState()
     val nutrientTotals by viewModel.nutrientTotalsUi.collectAsState()
+    var showDatePickerDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Riepilogo Giornaliero") }
+                title = { Text("Riepilogo Giornaliero") },
+                actions = {
+                    IconButton(onClick = { showDatePickerDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.CalendarToday,
+                            contentDescription = "Seleziona Data"
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
@@ -100,7 +115,7 @@ fun HomeScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Divider()
+            HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
 
             // Sezione Riepilogo Nutrienti Totali
@@ -113,6 +128,14 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.weight(0.3f)) // Un po' di spazio in fondo, se necessario
         }
+    }
+
+    if (showDatePickerDialog) {
+        DateChoiceDialog(
+            onDismiss = {
+                showDatePickerDialog = false
+            }
+        )
     }
 }
 
@@ -259,9 +282,4 @@ fun NutrientProgressRow(
         }
     }
     Spacer(modifier = Modifier.height(6.dp)) // Spazio tra le righe di nutrienti
-}
-
-fun isColorDark(color: Color): Boolean {
-    val darkness = 1 - (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue)
-    return darkness >= 0.5 // Threshold, puoi regolarlo
 }

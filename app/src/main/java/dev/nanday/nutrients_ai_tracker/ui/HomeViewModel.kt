@@ -25,11 +25,11 @@ data class NutrientTotalsUiModel(
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val dailyIntakeRepository: DailyIntakeRepository
+    dailyIntakeRepository: DailyIntakeRepository
 ) : ViewModel() {
 
     // Flusso originale dei dati dal repository
-    private val todayIntakeFlow = dailyIntakeRepository.getTodayFoodIntake()
+    private val todayIntakeFlow = dailyIntakeRepository.foodIntakeFlow
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000), // O Eagerly se preferisci
