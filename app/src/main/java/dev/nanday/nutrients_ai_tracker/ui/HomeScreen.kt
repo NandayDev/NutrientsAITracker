@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -55,7 +56,8 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
-    onAddFood: () -> Unit,
+    onAddDailyIntake: () -> Unit,
+    onShowFoodList: () -> Unit,
     onUpdateDailyIntake: (Long) -> Unit,
     onNutrientClick: (Nutrient) -> Unit
 ) {
@@ -78,9 +80,18 @@ fun HomeScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddFood) {
-                Icon(Icons.Filled.Add, contentDescription = "Aggiungi Consumazione")
+            Row {
+                FloatingActionButton(
+                    modifier = Modifier.padding(end = 15.dp),
+                    onClick = onShowFoodList
+                ) {
+                    Icon(Icons.Filled.Fastfood, contentDescription = "Lista cibi")
+                }
+                FloatingActionButton(onClick = onAddDailyIntake) {
+                    Icon(Icons.Filled.Add, contentDescription = "Aggiungi Consumazione")
+                }
             }
+
         }
     ) { paddingValues ->
         Column(

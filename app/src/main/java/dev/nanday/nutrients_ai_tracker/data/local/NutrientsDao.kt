@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import dev.nanday.nutrients_ai_tracker.data.local.models.DbDailyIntake
 import dev.nanday.nutrients_ai_tracker.data.local.models.DbDailyIntakeWithFood
 import dev.nanday.nutrients_ai_tracker.data.local.models.DbFood
@@ -61,8 +62,11 @@ interface NutrientsDao {
     @Delete
     suspend fun deleteDailyIntake(dbDailyIntake: DbDailyIntake)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert
     suspend fun insertFood(food: DbFood)
+
+    @Update
+    suspend fun updateFood(food: DbFood)
 
     @Delete
     suspend fun deleteFood(food: DbFood)

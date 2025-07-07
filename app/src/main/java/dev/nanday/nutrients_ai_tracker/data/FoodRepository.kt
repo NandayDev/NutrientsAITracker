@@ -27,9 +27,9 @@ class FoodRepositoryImpl @Inject constructor(
         dao.insertFood(dbFood)
     }
 
-    override suspend fun updateFood(food: Food) = withContext(dispatcher) {
+    override suspend fun updateFood(food: Food) {
         val dbFood = DbFood.fromFood(food)
-        dao.insertFood(dbFood)
+        dao.updateFood(dbFood)
     }
 
     override suspend fun deleteFood(food: Food) {

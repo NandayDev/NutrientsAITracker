@@ -1,4 +1,4 @@
-package dev.nanday.nutrients_ai_tracker.ui.add_food
+package dev.nanday.nutrients_ai_tracker.ui.food_detail
 
 import android.Manifest
 import android.content.Context
@@ -27,8 +27,10 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
@@ -42,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,13 +63,14 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddFoodScreen(
+fun FoodDetailScreen(
     // Inject ViewModel using Hilt or pass it manually
-    viewModel: IAddFoodViewModel = hiltViewModel<AddFoodViewModel>(), // Example using default ViewModel provider
+    viewModel: IFoodDetailViewModel = hiltViewModel<FoodDetailViewModel>(), // Example using default ViewModel provider
     onFoodAdded: () -> Unit, // Callback when food is successfully added
     onNavigateBack: () -> Unit
 ) {
@@ -154,15 +158,7 @@ fun AddFoodScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- Food Name ---
-            OutlinedTextField(
-                value = viewModel.foodName,
-                onValueChange = { viewModel.onFoodNameChange(it) },
-                label = { Text("Nome alimento") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
-            )
+            FoodNameAndAIButton(viewModel)
 
             // --- Image Selector ---
             Box(
@@ -207,38 +203,22 @@ fun AddFoodScreen(
             }
             Spacer(modifier = Modifier.height(8.dp)) // Spacing after image picker
 
-            IconButton(
-                modifier = Modifier.width(150.dp),
+            DecodeNutritionTableFromAIButton(
+                viewModel = viewModel,
                 onClick = {
                     if (!photoPermissionGranted) {
                         permissionLauncher.launch(Manifest.permission.CAMERA)
-                        return@IconButton
+                        return@DecodeNutritionTableFromAIButton
                     }
                     val uri = createImageFileUri(context)
                     nutritionTablePhotoUri = uri
                     nutritionTablePickerLauncher.launch(uri)
-                }) {
-                Row {
-                    Icon(
-                        Icons.Filled.PhotoCamera,
-                        contentDescription = "Seleziona foto",
-                        modifier = Modifier
-                            .size(36.dp)
-                            .padding(end = 10.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        "Decodifica tabella nutrizionale",
-                        modifier = Modifier.weight(1F),
-                        textAlign = TextAlign.Center
-                    )
                 }
-            }
+            )
 
             Spacer(modifier = Modifier.height(8.dp)) // Spacing after image picker
 
             // --- Nutrient Fields ---
-            NutrientInputRow("Energia (kJ)", viewModel.energyKjInput, viewModel::onEnergyKjChange)
             NutrientInputRow("Energia (kcal)", viewModel.energyKcalInput, viewModel::onEnergyKcalChange)
             NutrientInputRow("Grassi totali (g)", viewModel.fatInput, viewModel::onFatChange)
             NutrientInputRow("Grassi saturi (g)", viewModel.saturatedFatInput, viewModel::onSaturatedFatChange)
@@ -249,6 +229,63 @@ fun AddFoodScreen(
             NutrientInputRow("Sale (g)", viewModel.saltInput, viewModel::onSaltChange)
 
             Spacer(Modifier.height(72.dp)) // Space for the FAB
+        }
+    }
+}
+
+@Composable
+private fun FoodNameAndAIButton(viewModel: IFoodDetailViewModel) {
+    val isLoading = viewModel.isLoadingFromText.collectAsState()
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        OutlinedTextField(
+            value = viewModel.foodName,
+            onValueChange = { viewModel.onFoodNameChange(it) },
+            label = { Text("Nome alimento") },
+            modifier = Modifier
+                .weight(1F)
+                .padding(end = 10.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+        )
+        if (isLoading.value) {
+            CircularProgressIndicator()
+        } else {
+            IconButton(onClick = {
+                viewModel.onDownloadInfoFromAISelected()
+            }) {
+                Icon(Icons.Filled.CloudDownload, contentDescription = "Chiedi a GPT")
+            }
+        }
+    }
+}
+
+@Composable
+fun DecodeNutritionTableFromAIButton(modifier: Modifier = Modifier, viewModel: IFoodDetailViewModel, onClick: () -> Unit) {
+    val isLoadingFromPhoto = viewModel.isLoadingFromPhoto.collectAsState()
+    if (isLoadingFromPhoto.value) {
+        CircularProgressIndicator()
+        return
+    }
+    IconButton(
+        modifier = modifier.width(150.dp),
+        onClick = onClick
+    ) {
+        Row {
+            Icon(
+                Icons.Filled.PhotoCamera,
+                contentDescription = "Seleziona foto",
+                modifier = Modifier
+                    .size(36.dp)
+                    .padding(end = 10.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                "Decodifica tabella nutrizionale",
+                modifier = Modifier.weight(1F),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -312,12 +349,11 @@ private fun createImageFileUri(context: Context): Uri {
 
 @Preview
 @Composable
-private fun Preview() = AddFoodScreen(
-    viewModel = object : IAddFoodViewModel {
+private fun Preview() = FoodDetailScreen(
+    viewModel = object : IFoodDetailViewModel {
         override val foodName: String = ""
         override val selectedImageBitmap: Bitmap? = null
         override val selectedImageUri: Uri? = null
-        override val energyKjInput = NumericInputState()
         override val energyKcalInput = NumericInputState()
         override val fatInput = NumericInputState()
         override val saturatedFatInput = NumericInputState()
@@ -326,46 +362,22 @@ private fun Preview() = AddFoodScreen(
         override val fiberInput = NumericInputState()
         override val proteinInput = NumericInputState()
         override val saltInput = NumericInputState()
+        override val isLoadingFromText = MutableStateFlow(true)
+        override val isLoadingFromPhoto = MutableStateFlow(true)
 
-        override fun onFoodNameChange(newName: String) {
-        }
-
-        override fun onImageSelected(uri: Uri?, bitmap: Bitmap?) {
-        }
-
-        override fun onNutritionalTablePhotoSelected(bytes: ByteArray) {
-        }
-
-        override fun onEnergyKjChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onEnergyKcalChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onFatChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onSaturatedFatChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onCarbohydratesChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onSugarsChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onFiberChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onProteinChange(integer: String?, decimal: String?) {
-        }
-
-        override fun onSaltChange(integer: String?, decimal: String?) {
-        }
-
-        override fun saveFood(onSuccess: () -> Unit, onError: (String) -> Unit) {
-        }
-
+        override fun onFoodNameChange(newName: String) {}
+        override fun onDownloadInfoFromAISelected() {}
+        override fun onImageSelected(uri: Uri, bitmap: Bitmap, byteArray: ByteArray?) {}
+        override fun onNutritionalTablePhotoSelected(bytes: ByteArray) {}
+        override fun onEnergyKcalChange(integer: String?, decimal: String?) {}
+        override fun onFatChange(integer: String?, decimal: String?) {}
+        override fun onSaturatedFatChange(integer: String?, decimal: String?) {}
+        override fun onCarbohydratesChange(integer: String?, decimal: String?) {}
+        override fun onSugarsChange(integer: String?, decimal: String?) {}
+        override fun onFiberChange(integer: String?, decimal: String?) {}
+        override fun onProteinChange(integer: String?, decimal: String?) {}
+        override fun onSaltChange(integer: String?, decimal: String?) {}
+        override fun saveFood(onSuccess: () -> Unit, onError: (String) -> Unit) {}
     },
     onFoodAdded = {}
 ) { }

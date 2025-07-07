@@ -13,8 +13,8 @@ import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import dev.nanday.nutrients_ai_tracker.ui.HomeScreen
 import dev.nanday.nutrients_ai_tracker.ui.HomeViewModel
-import dev.nanday.nutrients_ai_tracker.ui.add_food.AddFoodScreen
 import dev.nanday.nutrients_ai_tracker.ui.daily_intake.DailyIntakeScreen
+import dev.nanday.nutrients_ai_tracker.ui.food_detail.FoodDetailScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListViewModel
 import dev.nanday.nutrients_ai_tracker.ui.nutrient_detail.NutrientDetailScreen
@@ -39,7 +39,7 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
         composable(Screen.Home.route) {
             HomeScreen(
                 viewModel = homeViewModel,
-                onAddFood = { navController.navigate(Screen.FoodList.route) },
+                onAddDailyIntake = { navController.navigate(Screen.FoodListForDailyIntake.route) },
                 onUpdateDailyIntake = { dailyIntakeId ->
                     navController.navigate(
                         Screen.UpdateDailyIntake.createRoute(dailyIntakeId)
@@ -49,26 +49,46 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
                     navController.navigate(
                         Screen.NutrientDetail.createRoute(nutrient.number)
                     )
+                },
+                onShowFoodList = {
+                    navController.navigate(Screen.FoodListForFoodEdit.route)
                 }
             )
         }
-        composable(Screen.FoodList.route) {
-            // You'll create this Composable in the next step
+        composable(Screen.FoodListForDailyIntake.route) {
             FoodListScreen(
                 viewModel = foodListViewModel,
                 onNavigateToAddFood = { navController.navigate(Screen.AddFood.route) }, // Navigate to AddFood screen
                 onFoodClick = { food ->
-                    navController.navigate(Screen.AddDailyIntake.createRoute(food.id))
+                    val route = Screen.AddDailyIntake.createRoute(food.id)
+                    navController.navigate(route)
+                }
+            )
+        }
+        composable(Screen.FoodListForFoodEdit.route) {
+            FoodListScreen(
+                viewModel = foodListViewModel,
+                onNavigateToAddFood = { navController.navigate(Screen.AddFood.route) }, // Navigate to AddFood screen
+                onFoodClick = { food ->
+                    val route = Screen.UpdateFood.createRoute(food.id)
+                    navController.navigate(route)
                 }
             )
         }
         composable(Screen.AddFood.route) {
-            AddFoodScreen(
+            FoodDetailScreen(
                 // addFoodViewModel = hiltViewModel(), // If using Hilt
                 onFoodAdded = {
-                    navController.popBackStack(Screen.FoodList.route, inclusive = false) // Or navigate to FoodList
-                    // Optionally, you could navigate all the way back to Home:
-                    // navController.popBackStack(Screen.Home.route, inclusive = false)
+                    navController.popBackStack()
+                },
+                onNavigateBack = { navController.popBackStack(Screen.Home.route, false, false) }
+            )
+        }
+        composable(Screen.UpdateFood.route, arguments = listOf(navArgument("foodId") { type = NavType.LongType })) {
+            FoodDetailScreen(
+                // addFoodViewModel = hiltViewModel(), // If using Hilt
+                onFoodAdded = {
+                    navController.popBackStack()
                 },
                 onNavigateBack = { navController.popBackStack(Screen.Home.route, false, false) }
             )
@@ -100,8 +120,13 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
-    object FoodList : Screen("food_list")
+    object FoodListForDailyIntake : Screen("food_list_daily_intake")
+    object FoodListForFoodEdit : Screen("food_list_edit")
     object AddFood : Screen("add_food")
+    object UpdateFood : Screen("update_food/{foodId}") {
+        fun createRoute(foodId: Long): String = "update_food/$foodId"
+    }
+
     object AddDailyIntake : Screen("add_daily_intake/{foodId}") {
         fun createRoute(foodId: Long): String = "add_daily_intake/$foodId"
     }

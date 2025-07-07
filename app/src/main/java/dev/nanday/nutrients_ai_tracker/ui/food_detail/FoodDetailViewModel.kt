@@ -1,4 +1,4 @@
-package dev.nanday.nutrients_ai_tracker.ui.add_food
+package dev.nanday.nutrients_ai_tracker.ui.food_detail
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -9,7 +9,9 @@ import android.util.Base64
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,19 +19,23 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.nanday.nutrients_ai_tracker.data.FoodRepository
 import dev.nanday.nutrients_ai_tracker.data.OpenAiRepository
 import dev.nanday.nutrients_ai_tracker.data.models.Food
+import dev.nanday.nutrients_ai_tracker.data.remote.models.OpenAiFoodResponse
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import javax.inject.Inject
 
-interface IAddFoodViewModel {
+interface IFoodDetailViewModel {
     val foodName: String
     val selectedImageBitmap: Bitmap?
     val selectedImageUri: Uri?
-    val energyKjInput: NumericInputState
     val energyKcalInput: NumericInputState
     val fatInput: NumericInputState
     val saturatedFatInput: NumericInputState
@@ -39,11 +45,14 @@ interface IAddFoodViewModel {
     val proteinInput: NumericInputState
     val saltInput: NumericInputState
 
+    val isLoadingFromText: StateFlow<Boolean>
+    val isLoadingFromPhoto: StateFlow<Boolean>
+
     fun onFoodNameChange(newName: String)
-    fun onImageSelected(uri: Uri?, bitmap: Bitmap?)
+    fun onDownloadInfoFromAISelected()
+    fun onImageSelected(uri: Uri, bitmap: Bitmap, byteArray: ByteArray? = null)
     fun onNutritionalTablePhotoSelected(bytes: ByteArray)
 
-    fun onEnergyKjChange(integer: String? = null, decimal: String? = null)
     fun onEnergyKcalChange(integer: String? = null, decimal: String? = null)
     fun onFatChange(integer: String? = null, decimal: String? = null)
     fun onSaturatedFatChange(integer: String? = null, decimal: String? = null)
@@ -57,11 +66,14 @@ interface IAddFoodViewModel {
 }
 
 @HiltViewModel
-class AddFoodViewModel @Inject constructor(
+class FoodDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val foodRepository: FoodRepository,
-    private val openAiRepository: OpenAiRepository
-) : ViewModel(), IAddFoodViewModel {
+    private val openAiRepository: OpenAiRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel(), IFoodDetailViewModel {
+
+    private val foodId = savedStateHandle.get<Long>("foodId")
 
     override var foodName by mutableStateOf("")
         private set
@@ -71,8 +83,9 @@ class AddFoodViewModel @Inject constructor(
     override var selectedImageUri by mutableStateOf<Uri?>(null) // To hold URI from picker
         private set
 
-    override var energyKjInput by mutableStateOf(NumericInputState())
-        private set
+    @Volatile
+    private var selectedImageByteArray: ByteArray? = null
+
     override var energyKcalInput by mutableStateOf(NumericInputState())
         private set
     override var fatInput by mutableStateOf(NumericInputState())
@@ -90,82 +103,47 @@ class AddFoodViewModel @Inject constructor(
     override var saltInput by mutableStateOf(NumericInputState()) // Assuming salt also has int/decimal
         private set
 
+    override val isLoadingFromText = MutableStateFlow(false)
+    override val isLoadingFromPhoto = MutableStateFlow(false)
+
+    init {
+        loadFoodFromDatabase()
+    }
+
     override fun onFoodNameChange(newName: String) {
         foodName = newName
     }
 
-    override fun onImageSelected(uri: Uri?, bitmap: Bitmap?) {
+    override fun onDownloadInfoFromAISelected() {
+        viewModelScope.launch {
+            isLoadingFromText.value = true
+            val response = openAiRepository.getFoodFromText(foodName)
+            updateFoodInfoFromOpenAiResponse(response)
+            isLoadingFromText.value = false
+        }
+    }
+
+    override fun onImageSelected(uri: Uri, bitmap: Bitmap, byteArray: ByteArray?) {
         selectedImageUri = uri
         selectedImageBitmap = bitmap
+        if (byteArray == null) {
+            viewModelScope.launch {
+                selectedImageByteArray = processAndCompressImage(uri)
+            }
+        } else {
+            selectedImageByteArray = byteArray
+        }
     }
 
     override fun onNutritionalTablePhotoSelected(bytes: ByteArray) {
         viewModelScope.launch {
+            isLoadingFromPhoto.value = true
             val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)!!
             val response = openAiRepository.getFoodFromImage(base64)
-            if (response != null) {
-                onEnergyKjChange(
-                    integer = response.energyKj.toInt().toString(),
-                    decimal = ((response.energyKj * 10).toInt() % 10).toString()
-                )
-
-                onEnergyKcalChange(
-                    integer = response.energyKcal.toInt().toString(),
-                    decimal = ((response.energyKcal * 10).toInt() % 10).toString()
-                )
-
-                onFatChange(
-                    integer = response.fat.toInt().toString(),
-                    decimal = ((response.fat * 10).toInt() % 10).toString()
-                )
-
-                onSaturatedFatChange(
-                    integer = response.saturatedFat.toInt().toString(),
-                    decimal = ((response.saturatedFat * 10).toInt() % 10).toString()
-                )
-
-                onCarbohydratesChange(
-                    integer = response.carbohydrates.toInt().toString(),
-                    decimal = ((response.carbohydrates * 10).toInt() % 10).toString()
-                )
-
-                onSugarsChange(
-                    integer = response.sugars.toInt().toString(),
-                    decimal = ((response.sugars * 10).toInt() % 10).toString()
-                )
-
-                onFiberChange(
-                    integer = response.fiber.toInt().toString(),
-                    decimal = ((response.fiber * 10).toInt() % 10).toString()
-                )
-
-                onProteinChange(
-                    integer = response.protein.toInt().toString(),
-                    decimal = ((response.protein * 10).toInt() % 10).toString()
-                )
-
-                onSaltChange(
-                    integer = response.salt.toInt().toString(),
-                    decimal = ((response.salt * 10).toInt() % 10).toString()
-                )
-            }
+            updateFoodInfoFromOpenAiResponse(response)
+            isLoadingFromPhoto.value = false
         }
     }
-
-    private fun onNumericInputChange(
-        currentValue: NumericInputState,
-        onValueChange: (NumericInputState) -> Unit,
-        newInteger: String? = null,
-        newDecimal: String? = null
-    ) {
-        val intInput = newInteger?.filter { it.isDigit() } ?: currentValue.integerPart
-        val decInput = newDecimal?.filter { it.isDigit() } ?: currentValue.decimalPart
-        onValueChange(NumericInputState(intInput, decInput))
-    }
-
-    // Specific updaters for each numeric field
-    override fun onEnergyKjChange(integer: String?, decimal: String?) =
-        onNumericInputChange(energyKjInput, { energyKjInput = it }, integer, decimal)
 
     override fun onEnergyKcalChange(integer: String?, decimal: String?) =
         onNumericInputChange(energyKcalInput, { energyKcalInput = it }, integer, decimal)
@@ -199,18 +177,14 @@ class AddFoodViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            val photoByteArray = selectedImageUri?.let { uri ->
-                processAndCompressImage(uri)
-            }
-
             // Validate and convert numeric inputs, handling potential nulls from toDouble()
             // For simplicity, we'll use 0.0 if a field is not filled,
             // but you might want more robust validation.
             val foodToSave = Food(
-                // id will be generated by the database (autoGenerate = true)
+                id = foodId ?: 0L,
                 name = foodName.trim(),
-                photo = photoByteArray,
-                energyKj = energyKjInput.toDouble() ?: 0.0,
+                photo = selectedImageByteArray,
+                energyKj = energyKcalInput.toDouble()?.let { it * 4184.0 } ?: 0.0,
                 energyKcal = energyKcalInput.toDouble() ?: 0.0,
                 fat = fatInput.toDouble() ?: 0.0,
                 saturatedFat = saturatedFatInput.toDouble() ?: 0.0,
@@ -221,13 +195,132 @@ class AddFoodViewModel @Inject constructor(
                 salt = saltInput.toDouble() ?: 0.0
             )
             try {
-                foodRepository.insertFood(foodToSave)
+                if (foodId == null) {
+                    foodRepository.insertFood(foodToSave)
+                } else {
+                    foodRepository.updateFood(foodToSave)
+                }
                 onSuccess()
             } catch (e: Exception) {
                 // Log the exception e
                 onError("Errore durante il salvataggio dell'alimento: ${e.message}")
             }
         }
+    }
+
+    private fun updateFoodInfoFromOpenAiResponse(response: OpenAiFoodResponse?) {
+        if (response != null) {
+            onEnergyKcalChange(
+                integer = response.energyKcal.toInt().toString(),
+                decimal = ((response.energyKcal * 10).toInt() % 10).toString()
+            )
+
+            onFatChange(
+                integer = response.fat.toInt().toString(),
+                decimal = ((response.fat * 10).toInt() % 10).toString()
+            )
+
+            onSaturatedFatChange(
+                integer = response.saturatedFat.toInt().toString(),
+                decimal = ((response.saturatedFat * 10).toInt() % 10).toString()
+            )
+
+            onCarbohydratesChange(
+                integer = response.carbohydrates.toInt().toString(),
+                decimal = ((response.carbohydrates * 10).toInt() % 10).toString()
+            )
+
+            onSugarsChange(
+                integer = response.sugars.toInt().toString(),
+                decimal = ((response.sugars * 10).toInt() % 10).toString()
+            )
+
+            onFiberChange(
+                integer = response.fiber.toInt().toString(),
+                decimal = ((response.fiber * 10).toInt() % 10).toString()
+            )
+
+            onProteinChange(
+                integer = response.protein.toInt().toString(),
+                decimal = ((response.protein * 10).toInt() % 10).toString()
+            )
+
+            onSaltChange(
+                integer = response.salt.toInt().toString(),
+                decimal = ((response.salt * 10).toInt() % 10).toString()
+            )
+        }
+    }
+
+    private fun onNumericInputChange(
+        currentValue: NumericInputState,
+        onValueChange: (NumericInputState) -> Unit,
+        newInteger: String? = null,
+        newDecimal: String? = null
+    ) {
+        val intInput = newInteger?.filter { it.isDigit() } ?: currentValue.integerPart
+        val decInput = newDecimal?.filter { it.isDigit() } ?: currentValue.decimalPart
+        onValueChange(NumericInputState(intInput, decInput))
+    }
+
+    private fun loadFoodFromDatabase() {
+        viewModelScope.launch {
+            if (foodId != null) {
+                val food = foodRepository.getFoodById(foodId)
+                if (food != null) {
+                    onFoodNameChange(food.name)
+                    food.photo?.let { byteArray ->
+                        val bitmap = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.size)
+                        val uri = createTempFileForImage(bitmap)
+                        onImageSelected(uri, bitmap, byteArray)
+                    }
+                    onEnergyKcalChange(
+                        integer = food.energyKcal.toInt().toString(),
+                        decimal = ((food.energyKcal * 10).toInt() % 10).toString()
+                    )
+                    onFatChange(
+                        integer = food.fat.toInt().toString(),
+                        decimal = ((food.fat * 10).toInt() % 10).toString()
+                    )
+                    onSaturatedFatChange(
+                        integer = food.saturatedFat.toInt().toString(),
+                        decimal = ((food.saturatedFat * 10).toInt() % 10).toString()
+                    )
+                    onCarbohydratesChange(
+                        integer = food.carbohydrates.toInt().toString(),
+                        decimal = ((food.carbohydrates * 10).toInt() % 10).toString()
+                    )
+                    onSugarsChange(
+                        integer = food.sugars.toInt().toString(),
+                        decimal = ((food.sugars * 10).toInt() % 10).toString()
+                    )
+                    onFiberChange(
+                        integer = food.fiber.toInt().toString(),
+                        decimal = ((food.fiber * 10).toInt() % 10).toString()
+                    )
+                    onProteinChange(
+                        integer = food.protein.toInt().toString(),
+                        decimal = ((food.protein * 10).toInt() % 10).toString()
+                    )
+                    onSaltChange(
+                        integer = food.salt.toInt().toString(),
+                        decimal = ((food.salt * 10).toInt() % 10).toString()
+                    )
+                }
+            }
+        }
+    }
+
+    private fun createTempFileForImage(bitmap: Bitmap): Uri {
+        val tempFile = File.createTempFile("loaded_image_", ".jpg", context.cacheDir)
+        val fos = FileOutputStream(tempFile)
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
+        fos.close()
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            tempFile
+        )
     }
 
     private suspend fun processAndCompressImage(imageUri: Uri): ByteArray? {
