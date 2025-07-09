@@ -6,6 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.ForeignKey.Companion.RESTRICT
 import androidx.room.PrimaryKey
 import dev.nanday.nutrients_ai_tracker.data.local.AppDatabase
+import dev.nanday.nutrients_ai_tracker.data.models.DailyIntake
 
 @Entity(
     tableName = AppDatabase.Companion.DAILY_INTAKE_TABLE_NAME,
@@ -31,4 +32,11 @@ data class DbDailyIntake(
 
     @ColumnInfo(name = AppDatabase.Companion.DAILY_INTAKE_QUANTITY)
     val quantity: Double
-)
+) {
+    fun toDailyIntake() = DailyIntake(
+        id = id,
+        date = date,
+        foodId = foodId,
+        quantity = quantity
+    )
+}

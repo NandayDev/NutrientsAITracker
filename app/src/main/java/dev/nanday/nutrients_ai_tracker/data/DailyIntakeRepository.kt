@@ -5,6 +5,7 @@ package dev.nanday.nutrients_ai_tracker.data
 import android.annotation.SuppressLint
 import dev.nanday.nutrients_ai_tracker.data.local.NutrientsDao
 import dev.nanday.nutrients_ai_tracker.data.local.models.DbDailyIntake
+import dev.nanday.nutrients_ai_tracker.data.models.DailyIntake
 import dev.nanday.nutrients_ai_tracker.data.models.DailyIntakeWithFood
 import dev.nanday.nutrients_ai_tracker.data.models.Food
 import kotlinx.coroutines.CoroutineDispatcher
@@ -23,6 +24,7 @@ interface DailyIntakeRepository {
     val currentDateFlow: MutableStateFlow<Date>
     val foodIntakeFlow: Flow<List<DailyIntakeWithFood>>
     suspend fun getDailyIntakeWithFoodById(id: Long): DailyIntakeWithFood?
+    suspend fun getLastDailyIntakeForFoodId(foodId: Long): DailyIntake?
     suspend fun createDailyIntake(food: Food, quantityGrams: Int)
     suspend fun updateDailyIntake(dailyIntakeId: Long, food: Food, quantityGrams: Int)
     suspend fun deleteDailyIntake(dailyIntakeId: Long)
@@ -48,8 +50,12 @@ class DailyIntakeRepositoryImpl(
             }
         }
 
-    override suspend fun getDailyIntakeWithFoodById(id: Long): DailyIntakeWithFood? = withContext(dispatcher) {
+    override suspend fun getDailyIntakeWithFoodById(id: Long) = withContext(dispatcher) {
         dao.getDailyIntakeWithFoodById(id)?.toDailyIntakeWithFood()
+    }
+
+    override suspend fun getLastDailyIntakeForFoodId(foodId: Long) = withContext(dispatcher) {
+        dao.getLastDailyIntakeWithFoodId(foodId)?.toDailyIntake()
     }
 
     override suspend fun createDailyIntake(food: Food, quantityGrams: Int) = withContext(dispatcher) {

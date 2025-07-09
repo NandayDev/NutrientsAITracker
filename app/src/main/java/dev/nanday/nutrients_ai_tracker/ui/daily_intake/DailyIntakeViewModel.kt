@@ -52,13 +52,16 @@ class AddDailyIntakeViewModel @Inject constructor(
     private val _calculatedNutrients = MutableStateFlow<NutrientInfo?>(null)
     val calculatedNutrients: StateFlow<NutrientInfo?> = _calculatedNutrients.asStateFlow()
 
-    val _shouldShowDeleteButton = MutableStateFlow(false)
+    private val _shouldShowDeleteButton = MutableStateFlow(false)
     val shouldShowDeleteButton = _shouldShowDeleteButton.asStateFlow()
 
     init {
         viewModelScope.launch {
             _food.value = if (foodId != null) {
                 _shouldShowDeleteButton.value = false
+                dailyIntakeRepository.getLastDailyIntakeForFoodId(foodId)?.let { dailyIntake ->
+                    onGramsChanged(dailyIntake.quantity.roundToInt().toString())
+                }
                 foodRepository.getFoodById(foodId) // Assicurati che il repository abbia questo metodo
             } else if (dailyIntakeId != null) {
                 val dailyIntake = dailyIntakeRepository.getDailyIntakeWithFoodById(dailyIntakeId)

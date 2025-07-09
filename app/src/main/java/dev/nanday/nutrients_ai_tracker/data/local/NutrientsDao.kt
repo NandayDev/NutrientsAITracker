@@ -56,6 +56,13 @@ interface NutrientsDao {
     )
     suspend fun getDailyIntakeWithFoodById(id: Long): DbDailyIntakeWithFood?
 
+    @Query(
+        """SELECT * FROM ${AppDatabase.DAILY_INTAKE_TABLE_NAME} 
+            WHERE ${AppDatabase.DAILY_INTAKE_FOOD_ID} = :foodId 
+            ORDER BY ${AppDatabase.DAILY_INTAKE_DATE} DESC LIMIT 1"""
+    )
+    suspend fun getLastDailyIntakeWithFoodId(foodId: Long): DbDailyIntake?
+
     /**
      * Deletes a specific DbDailyIntake from the database.
      */
