@@ -1,16 +1,20 @@
 package dev.nanday.nutrients_ai_tracker.di
 
 import android.app.Application
+import android.content.Context
 import androidx.room.Room
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.nanday.nutrients_ai_tracker.BuildConfig
 import dev.nanday.nutrients_ai_tracker.data.DailyIntakeRepository
 import dev.nanday.nutrients_ai_tracker.data.DailyIntakeRepositoryImpl
 import dev.nanday.nutrients_ai_tracker.data.FoodRepository
 import dev.nanday.nutrients_ai_tracker.data.FoodRepositoryImpl
+import dev.nanday.nutrients_ai_tracker.data.NutritionalTargetRepository
+import dev.nanday.nutrients_ai_tracker.data.NutritionalTargetRepositoryImpl
 import dev.nanday.nutrients_ai_tracker.data.OpenAiRepository
 import dev.nanday.nutrients_ai_tracker.data.OpenAiRepositoryImpl
 import dev.nanday.nutrients_ai_tracker.data.local.AppDatabase
@@ -58,6 +62,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideOpenAiRepository(client: OpenAiClient): OpenAiRepository = OpenAiRepositoryImpl(client)
+
+    @Provides
+    @Singleton
+    fun provideNutritionalTargetRepository(
+        @ApplicationContext context: Context
+    ): NutritionalTargetRepository {
+        return NutritionalTargetRepositoryImpl(context)
+    }
 
     @Provides
     @Singleton

@@ -21,9 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Fastfood
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -59,11 +62,13 @@ fun HomeScreen(
     onAddDailyIntake: () -> Unit,
     onShowFoodList: () -> Unit,
     onUpdateDailyIntake: (Long) -> Unit,
-    onNutrientClick: (Nutrient) -> Unit
+    onNutrientClick: (Nutrient) -> Unit,
+    onNavigateToEditTargets: () -> Unit
 ) {
     val uiModels by viewModel.uiModels.collectAsState()
     val nutrientTotals by viewModel.nutrientTotalsUi.collectAsState()
     var showDatePickerDialog by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -75,6 +80,24 @@ fun HomeScreen(
                             imageVector = Icons.Filled.CalendarToday,
                             contentDescription = "Seleziona Data"
                         )
+                    }
+                    Box { // Necessario per posizionare correttamente il DropdownMenu
+                        IconButton(onClick = { showMenu = !showMenu }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Altre opzioni")
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Modifica target nutrizionali") },
+                                onClick = {
+                                    showMenu = false
+                                    onNavigateToEditTargets() // Chiama la navigazione
+                                }
+                            )
+                            // Qui puoi aggiungere altre voci di menu se necessario
+                        }
                     }
                 }
             )

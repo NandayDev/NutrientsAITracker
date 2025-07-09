@@ -18,6 +18,7 @@ import dev.nanday.nutrients_ai_tracker.ui.food_detail.FoodDetailScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListScreen
 import dev.nanday.nutrients_ai_tracker.ui.food_list.FoodListViewModel
 import dev.nanday.nutrients_ai_tracker.ui.nutrient_detail.NutrientDetailScreen
+import dev.nanday.nutrients_ai_tracker.ui.nutritional_targets.NutritionalTargetsScreen
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -52,6 +53,9 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
                 },
                 onShowFoodList = {
                     navController.navigate(Screen.FoodListForFoodEdit.route)
+                },
+                onNavigateToEditTargets = {
+                    navController.navigate(Screen.NutritionalTargets.route)
                 }
             )
         }
@@ -115,6 +119,14 @@ fun AppNavigation(homeViewModel: HomeViewModel, foodListViewModel: FoodListViewM
                 )
             }
         }
+
+        composable(Screen.NutritionalTargets.route) {
+            NutritionalTargetsScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
     }
 }
 
@@ -138,4 +150,6 @@ sealed class Screen(val route: String) {
     object NutrientDetail : Screen("nutrient_detail/{nutrientNumber}") {
         fun createRoute(nutrientNumber: Int): String = "nutrient_detail/$nutrientNumber"
     }
+
+    object NutritionalTargets : Screen("nutritional_targets")
 }
