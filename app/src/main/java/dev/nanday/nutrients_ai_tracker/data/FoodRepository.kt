@@ -16,6 +16,7 @@ interface FoodRepository {
     suspend fun deleteFood(food: Food)
     suspend fun getFoodById(id: Long): Food?
     fun getAllFoods(): Flow<List<Food>>
+    fun searchFoodsByName(query: String): Flow<List<Food>>
 }
 
 class FoodRepositoryImpl @Inject constructor(
@@ -46,4 +47,11 @@ class FoodRepositoryImpl @Inject constructor(
             dbFood.toFood()
         }
     }
+
+    override fun searchFoodsByName(query: String): Flow<List<Food>> =
+        dao.searchFoodByName(query).map { list ->
+            list.map { dbFood ->
+                dbFood.toFood()
+            }
+        }
 }

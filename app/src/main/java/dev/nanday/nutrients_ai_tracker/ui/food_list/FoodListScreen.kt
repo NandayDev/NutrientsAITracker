@@ -16,14 +16,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -31,14 +36,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import dev.nanday.nutrients_ai_tracker.data.models.Food
-
-// Assume you have a FoodListViewModel that exposes a list of foods
-// and a data class FoodItem (replace with your actual data class)
-data class FoodItem(val id: String, val name: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +50,9 @@ fun FoodListScreen(
     onNavigateToAddFood: () -> Unit,
     onFoodClick: (Food) -> Unit // Callback with the ID of the selected food
 ) {
-    val foods by viewModel.allFoods.collectAsState(initial = listOf())
+    val foods by viewModel.foods.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     Scaffold(
         topBar = {
@@ -59,15 +64,45 @@ fun FoodListScreen(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier.padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        Column(
+            modifier = Modifier.padding(paddingValues)
         ) {
-            items(foods) { food ->
-                FoodItem(food, onFoodClick = onFoodClick)
+            TextField(
+                value = searchQuery,
+                onValueChange = viewModel::onSearchQueryChange,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                placeholder = { Text("Cerca alimento...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Icona di ricerca") },
+                trailingIcon = {
+                    IconButton(
+                        onClick = {
+                            viewModel.onSearchQueryChange("")
+                            focusManager.clearFocus()
+                        },
+                        content = {
+                            Icon(Icons.Default.Close, contentDescription = "Svuota campo di ricerca")
+                        }
+                    )
+                },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                )
+            )
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(foods) { food ->
+                    FoodItem(food, onFoodClick = onFoodClick)
+                }
             }
         }
+
     }
 }
 
@@ -79,8 +114,7 @@ fun FoodItem(
 ) {
     Card(
         modifier = modifier // Usa il modifier passato
-            .fillMaxWidth()
-            .padding(vertical = 4.dp, horizontal = 8.dp),
+            .fillMaxWidth(),
         onClick = { onFoodClick(food) },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
