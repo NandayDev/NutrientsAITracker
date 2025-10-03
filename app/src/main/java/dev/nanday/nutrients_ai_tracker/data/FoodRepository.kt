@@ -48,10 +48,11 @@ class FoodRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun searchFoodsByName(query: String): Flow<List<Food>> =
-        dao.searchFoodByName(query).map { list ->
+    override fun searchFoodsByName(query: String): Flow<List<Food>> {
+        return if (query.isEmpty()) getAllFoods() else dao.searchFoodByName(query).map { list ->
             list.map { dbFood ->
                 dbFood.toFood()
             }
         }
+    }
 }
