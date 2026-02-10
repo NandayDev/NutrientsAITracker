@@ -75,57 +75,57 @@ fun NutritionalTargetsScreen(
                 label = "Calorie (kcal)",
                 value = calories,
                 onValueChange = { viewModel.onCaloriesChange(it) },
-                valueRange = 1500f..4000f,
-                steps = (4000 - 1500) / 100 - 1 // steps = (numMax - numMin) / stepSize - 1
+                valueRange = NutritionalTargetsConstants.CALORIES_MIN..NutritionalTargetsConstants.CALORIES_MAX,
+                stepSize = NutritionalTargetsConstants.CALORIES_STEP_SIZE
             )
             TargetSlider(
                 label = "Proteine (g)",
                 value = protein,
                 onValueChange = { viewModel.onProteinChange(it) },
-                valueRange = 50f..200f,
-                steps = (200 - 50) / 5 - 1
+                valueRange = NutritionalTargetsConstants.PROTEINS_MIN..NutritionalTargetsConstants.PROTEINS_MAX,
+                stepSize = NutritionalTargetsConstants.PROTEINS_STEP_SIZE
             )
             TargetSlider(
                 label = "Grassi (g)",
                 value = fat,
                 onValueChange = { viewModel.onFatChange(it) },
-                valueRange = 40f..150f,
-                steps = (150 - 40) / 5 - 1
+                valueRange = NutritionalTargetsConstants.FAT_MIN..NutritionalTargetsConstants.FAT_MAX,
+                stepSize = NutritionalTargetsConstants.FAT_STEP_SIZE
             )
             TargetSlider(
                 label = "Grassi Saturi (g)",
                 value = saturatedFat,
                 onValueChange = { viewModel.onSaturatedFatChange(it) },
-                valueRange = 10f..60f,
-                steps = (60 - 10) / 5 - 1
+                valueRange = NutritionalTargetsConstants.SATURATED_FAT_MIN..NutritionalTargetsConstants.SATURATED_FAT_MAX,
+                stepSize = NutritionalTargetsConstants.SATURATED_FAT_STEP_SIZE
             )
             TargetSlider(
                 label = "Carboidrati (g)",
                 value = carbohydrates,
                 onValueChange = { viewModel.onCarbohydratesChange(it) },
-                valueRange = 200f..500f,
-                steps = (500 - 200) / 10 - 1
+                valueRange = NutritionalTargetsConstants.CARBOHYDRATES_MIN..NutritionalTargetsConstants.CARBOHYDRATES_MAX,
+                stepSize = NutritionalTargetsConstants.CARBOHYDRATES_STEP_SIZE
             )
             TargetSlider(
                 label = "Zuccheri (g)",
                 value = sugars,
                 onValueChange = { viewModel.onSugarsChange(it) },
-                valueRange = 30f..100f,
-                steps = (100 - 30) / 5 - 1
+                valueRange = NutritionalTargetsConstants.SUGAR_MIN..NutritionalTargetsConstants.SUGAR_MAX,
+                stepSize = NutritionalTargetsConstants.SUGAR_STEP_SIZE
             )
             TargetSlider(
                 label = "Fibre (g)",
                 value = fiber,
                 onValueChange = { viewModel.onFiberChange(it) },
-                valueRange = 10f..100f,
-                steps = (100 - 10) / 5 - 1
+                valueRange = NutritionalTargetsConstants.FIBERS_MIN..NutritionalTargetsConstants.FIBERS_MAX,
+                stepSize = NutritionalTargetsConstants.FIBERS_STEP_SIZE
             )
             TargetSlider(
                 label = "Sale (g)",
                 value = salt,
                 onValueChange = { viewModel.onSaltChange(it) },
-                valueRange = 0f..20f,
-                steps = (20 - 0) / 1 - 1
+                valueRange = NutritionalTargetsConstants.SALT_MIN..NutritionalTargetsConstants.SALT_MAX,
+                stepSize = NutritionalTargetsConstants.SALT_STEP_SIZE
             )
 
             Spacer(modifier = Modifier.height(72.dp)) // Spazio per il FAB
@@ -139,7 +139,7 @@ fun TargetSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
     valueRange: ClosedFloatingPointRange<Float>,
-    steps: Int,
+    stepSize: Float,
     unit: String = "" // Opzionale per unità se non già nel label
 ) {
     Column(modifier = Modifier.padding(vertical = 8.dp)) {
@@ -159,7 +159,7 @@ fun TargetSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
-            steps = steps, // Numero di segmenti discreti tra min e max. steps = N-1 se vuoi N valori possibili
+            steps = ((valueRange.endInclusive - valueRange.start) / stepSize - 1).roundToInt(), // Numero di segmenti discreti tra min e max. stepSize = N-1 se vuoi N valori possibili
             modifier = Modifier.fillMaxWidth()
         )
     }

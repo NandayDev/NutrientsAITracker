@@ -27,9 +27,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -255,7 +255,7 @@ private fun FoodNameAndAIButton(viewModel: IFoodDetailViewModel) {
             IconButton(onClick = {
                 viewModel.onDownloadInfoFromAISelected()
             }) {
-                Icon(Icons.Filled.CloudDownload, contentDescription = "Chiedi a GPT")
+                Icon(Icons.Filled.Search, contentDescription = "Chiedi a GPT")
             }
         }
     }
@@ -362,7 +362,7 @@ private fun Preview() = FoodDetailScreen(
         override val fiberInput = NumericInputState()
         override val proteinInput = NumericInputState()
         override val saltInput = NumericInputState()
-        override val isLoadingFromText = MutableStateFlow(true)
+        override val isLoadingFromText = MutableStateFlow(false)
         override val isLoadingFromPhoto = MutableStateFlow(true)
 
         override fun onFoodNameChange(newName: String) {}

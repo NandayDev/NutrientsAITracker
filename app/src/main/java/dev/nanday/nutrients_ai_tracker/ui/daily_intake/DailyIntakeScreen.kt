@@ -19,9 +19,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -89,23 +91,28 @@ fun DailyIntakeScreen(
                 }
             )
         },
-        bottomBar = {
-            Button(
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
                 onClick = {
-                    lifecycleScope.launch {
-                        viewModel.onSaveClicked()
-                        Toast.makeText(context, "Salvato!", Toast.LENGTH_SHORT).show()
-                        onNavigateBack()
+                    if (grams.isNotBlank() && (grams.toIntOrNull() ?: 0) > 0 && food != null) {
+                        lifecycleScope.launch {
+                            viewModel.onSaveClicked()
+                            Toast.makeText(context, "Salvato!", Toast.LENGTH_SHORT).show()
+                            onNavigateBack()
+                        }
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "Inserisci i grammi prima di proseguire",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = grams.isNotBlank() && (grams.toIntOrNull() ?: 0) > 0 && food != null
-            ) {
-                Text("SALVA PORZIONE")
-            }
-        }
+                icon = { Icon(Icons.Filled.Save, "Salva porzione") }, // Choose an appropriate icon
+                text = { Text("Salva porzione") },
+            )
+        },
+        floatingActionButtonPosition = FabPosition.Center
     ) { paddingValues ->
         food?.let { currentFood ->
             Column(
@@ -181,9 +188,6 @@ fun DailyIntakeScreen(
                 calculatedNutrients?.let { nutrients ->
                     NutrientTable(nutrients)
                 } ?: Text("Inserisci i grammi per calcolare i nutrienti.")
-
-
-                Spacer(modifier = Modifier.height(32.dp)) // Spazio prima del pulsante (nel bottom bar)
             }
         } ?: run {
             // Mostra un caricamento o un messaggio di errore se il cibo non è stato trovato/caricato
