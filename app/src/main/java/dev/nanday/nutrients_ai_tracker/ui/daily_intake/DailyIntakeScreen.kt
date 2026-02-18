@@ -66,8 +66,8 @@ fun getPercentageColor(percentage: Double, isFiber: Boolean = false): Color {
 
     return if (isFiber) {
         when {
-            p > 20 -> green
-            p in 10..20 -> orange
+            p >= 15 -> green
+            p in 10..15 -> orange
             else -> red
         }
     } else {
@@ -327,7 +327,7 @@ fun NutrientRow(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium
             )
-            if (percentage != null && percentage > 0) {
+            if (percentage != null) {
                 Text(
                     " (${percentage.roundToInt()}%)",
                     style = MaterialTheme.typography.bodyLarge,

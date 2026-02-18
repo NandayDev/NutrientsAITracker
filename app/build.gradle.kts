@@ -27,8 +27,8 @@ configure<ApplicationExtension> {
         applicationId = "dev.nanday.nutrients_ai_tracker"
         minSdk = 31
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 5
+        versionName = "1.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
