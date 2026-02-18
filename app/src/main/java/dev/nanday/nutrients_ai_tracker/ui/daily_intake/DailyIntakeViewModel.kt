@@ -1,4 +1,4 @@
-package dev.nanday.nutrients_ai_tracker.ui.daily_intake // Crea questo package
+package dev.nanday.nutrients_ai_tracker.ui.daily_intake
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -8,7 +8,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.nanday.nutrients_ai_tracker.data.DailyIntakeRepository
 import dev.nanday.nutrients_ai_tracker.data.FoodRepository
+import dev.nanday.nutrients_ai_tracker.data.NutritionalTargetRepository
 import dev.nanday.nutrients_ai_tracker.data.models.Food
+import dev.nanday.nutrients_ai_tracker.data.models.NutritionalTargets
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +37,7 @@ data class NutrientInfo(
 class AddDailyIntakeViewModel @Inject constructor(
     private val foodRepository: FoodRepository,
     private val dailyIntakeRepository: DailyIntakeRepository,
+    nutritionalTargetRepository: NutritionalTargetRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -51,6 +54,8 @@ class AddDailyIntakeViewModel @Inject constructor(
 
     private val _calculatedNutrients = MutableStateFlow<NutrientInfo?>(null)
     val calculatedNutrients: StateFlow<NutrientInfo?> = _calculatedNutrients.asStateFlow()
+
+    val targets: StateFlow<NutritionalTargets> = nutritionalTargetRepository.targetsFlow
 
     private val _shouldShowDeleteButton = MutableStateFlow(false)
     val shouldShowDeleteButton = _shouldShowDeleteButton.asStateFlow()
@@ -74,7 +79,7 @@ class AddDailyIntakeViewModel @Inject constructor(
 
             _food.value?.let {
                 _baseNutrientsPer100g.value = fetchBaseNutrientsForFood(it)
-                updateCalculatedNutrients() // Calcola inizialmente per 0 grammi o per i grammi salvati se ci sono
+                updateCalculatedNutrients()
             }
         }
     }
@@ -93,8 +98,7 @@ class AddDailyIntakeViewModel @Inject constructor(
     }
 
     fun onGramsChanged(newGrams: String) {
-        // Permetti solo cifre e un input ragionevole
-        if (newGrams.all { it.isDigit() } && newGrams.length <= 5) { // Limita la lunghezza
+        if (newGrams.all { it.isDigit() } && newGrams.length <= 5) {
             _grams.value = newGrams
             updateCalculatedNutrients()
         } else if (newGrams.isEmpty()) {
@@ -144,5 +148,9 @@ class AddDailyIntakeViewModel @Inject constructor(
 
     suspend fun delete() {
         dailyIntakeRepository.deleteDailyIntake(dailyIntakeId!!)
+    }
+
+    fun calculatePercentage(value: Double, target: Int): Double {
+        return if (target > 0) (value / target) * 100 else 0.0
     }
 }
