@@ -17,7 +17,7 @@ interface NutritionalTargetRepository {
 
 @Singleton
 class NutritionalTargetRepositoryImpl @Inject constructor(
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) : NutritionalTargetRepository {
 
     private val sharedPreferences = context.getSharedPreferences("Nutrients_AI_Tracker", Context.MODE_PRIVATE)

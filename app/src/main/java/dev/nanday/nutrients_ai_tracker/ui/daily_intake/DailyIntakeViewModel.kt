@@ -62,7 +62,7 @@ class AddDailyIntakeViewModel @Inject constructor(
                 dailyIntakeRepository.getLastDailyIntakeForFoodId(foodId)?.let { dailyIntake ->
                     onGramsChanged(dailyIntake.quantity.roundToInt().toString())
                 }
-                foodRepository.getFoodById(foodId) // Assicurati che il repository abbia questo metodo
+                foodRepository.getFoodById(foodId)
             } else if (dailyIntakeId != null) {
                 val dailyIntake = dailyIntakeRepository.getDailyIntakeWithFoodById(dailyIntakeId)
                 _grams.value = dailyIntake?.quantity?.roundToInt().toString()
@@ -73,7 +73,7 @@ class AddDailyIntakeViewModel @Inject constructor(
             }
 
             _food.value?.let {
-                _baseNutrientsPer100g.value = fetchBaseNutrientsForFood(it) // Funzione fittizia
+                _baseNutrientsPer100g.value = fetchBaseNutrientsForFood(it)
                 updateCalculatedNutrients() // Calcola inizialmente per 0 grammi o per i grammi salvati se ci sono
             }
         }

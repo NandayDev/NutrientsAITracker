@@ -1,8 +1,9 @@
+import com.android.build.api.dsl.ApplicationExtension
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    //alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
@@ -18,14 +19,14 @@ val openAiKey: String? = project.rootProject
     .use { Properties().apply { load(it) } }
     .getProperty("OPENAI_API_KEY")
 
-android {
+configure<ApplicationExtension> {
     namespace = "dev.nanday.nutrients_ai_tracker"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "dev.nanday.nutrients_ai_tracker"
         minSdk = 31
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 3
         versionName = "1.2"
 
@@ -47,9 +48,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
     }
     buildFeatures {
         compose = true

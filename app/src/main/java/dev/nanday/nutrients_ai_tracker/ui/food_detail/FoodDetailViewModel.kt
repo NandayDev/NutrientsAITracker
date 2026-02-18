@@ -67,7 +67,7 @@ interface IFoodDetailViewModel {
 
 @HiltViewModel
 class FoodDetailViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val foodRepository: FoodRepository,
     private val openAiRepository: OpenAiRepository,
     savedStateHandle: SavedStateHandle
