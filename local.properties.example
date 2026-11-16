@@ -1,0 +1,9 @@
+# Copy this file to `local.properties` (already git-ignored) and fill in your values:
+#
+#   cp local.properties.example local.properties
+#
+# Path to your Android SDK. Android Studio usually writes this line for you.
+# sdk.dir=/Users/<you>/Library/Android/sdk
+
+# Your OpenAI API key, from https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-openai-api-key-here

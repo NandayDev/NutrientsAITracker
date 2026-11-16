@@ -13,11 +13,16 @@ hilt {
     enableAggregatingTask = false
 }
 
-val openAiKey: String? = project.rootProject
-    .file("local.properties")
-    .inputStream()
-    .use { Properties().apply { load(it) } }
-    .getProperty("OPENAI_API_KEY")
+// The OpenAI key is read (in order) from local.properties, a Gradle property or an
+// environment variable, so it never needs to be committed. See local.properties.example.
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val openAiKey: String = localProperties.getProperty("OPENAI_API_KEY")
+    ?: (project.findProperty("OPENAI_API_KEY") as String?)
+    ?: System.getenv("OPENAI_API_KEY")
+    ?: "".also { logger.warn("OPENAI_API_KEY not set: AI features will not work. See README.md.") }
 
 configure<ApplicationExtension> {
     namespace = "dev.nanday.nutrients_ai_tracker"
